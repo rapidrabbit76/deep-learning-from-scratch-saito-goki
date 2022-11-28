@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  book-env:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+      args:
+        USERNAME: ${USERNAME}
+        USER_UID: ${UID}
+        USER_GID: ${GID}
+    command: tail -f /dev/null
+    volumes:
+      - ./:/ws
