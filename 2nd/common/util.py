@@ -1,14 +1,15 @@
 # coding: utf-8
 import sys
-sys.path.append('..')
+
+sys.path.append("..")
 import os
 from common.np import *
 
 
 def preprocess(text):
     text = text.lower()
-    text = text.replace('.', ' .')
-    words = text.split(' ')
+    text = text.replace(".", " .")
+    words = text.split(" ")
 
     word_to_id = {}
     id_to_word = {}
@@ -24,32 +25,32 @@ def preprocess(text):
 
 
 def cos_similarity(x, y, eps=1e-8):
-    '''코사인 유사도 산출
+    """코사인 유사도 산출
 
     :param x: 벡터
     :param y: 벡터
     :param eps: '0으로 나누기'를 방지하기 위한 작은 값
     :return:
-    '''
-    nx = x / (np.sqrt(np.sum(x ** 2)) + eps)
-    ny = y / (np.sqrt(np.sum(y ** 2)) + eps)
+    """
+    nx = x / (np.sqrt(np.sum(x**2)) + eps)
+    ny = y / (np.sqrt(np.sum(y**2)) + eps)
     return np.dot(nx, ny)
 
 
 def most_similar(query, word_to_id, id_to_word, word_matrix, top=5):
-    '''유사 단어 검색
+    """유사 단어 검색
 
     :param query: 쿼리(텍스트)
     :param word_to_id: 단어에서 단어 ID로 변환하는 딕셔너리
     :param id_to_word: 단어 ID에서 단어로 변환하는 딕셔너리
     :param word_matrix: 단어 벡터를 정리한 행렬. 각 행에 해당 단어 벡터가 저장되어 있다고 가정한다.
     :param top: 상위 몇 개까지 출력할 지 지정
-    '''
+    """
     if query not in word_to_id:
-        print('%s(을)를 찾을 수 없습니다.' % query)
+        print("%s(을)를 찾을 수 없습니다." % query)
         return
 
-    print('\n[query] ' + query)
+    print("\n[query] " + query)
     query_id = word_to_id[query]
     query_vec = word_matrix[query_id]
 
@@ -65,7 +66,7 @@ def most_similar(query, word_to_id, id_to_word, word_matrix, top=5):
     for i in (-1 * similarity).argsort():
         if id_to_word[i] == query:
             continue
-        print(' %s: %s' % (id_to_word[i], similarity[i]))
+        print(" %s: %s" % (id_to_word[i], similarity[i]))
 
         count += 1
         if count >= top:
@@ -73,12 +74,12 @@ def most_similar(query, word_to_id, id_to_word, word_matrix, top=5):
 
 
 def convert_one_hot(corpus, vocab_size):
-    '''원핫 표현으로 변환
+    """원핫 표현으로 변환
 
     :param corpus: 단어 ID 목록(1차원 또는 2차원 넘파이 배열)
     :param vocab_size: 어휘 수
     :return: 원핫 표현(2차원 또는 3차원 넘파이 배열)
-    '''
+    """
     N = corpus.shape[0]
 
     if corpus.ndim == 1:
@@ -97,13 +98,13 @@ def convert_one_hot(corpus, vocab_size):
 
 
 def create_co_matrix(corpus, vocab_size, window_size=1):
-    '''동시발생 행렬 생성
+    """동시발생 행렬 생성
 
     :param corpus: 말뭉치(단어 ID 목록)
     :param vocab_size: 어휘 수
     :param window_size: 윈도우 크기(윈도우 크기가 1이면 타깃 단어 좌우 한 단어씩이 맥락에 포함)
     :return: 동시발생 행렬
-    '''
+    """
     corpus_size = len(corpus)
     co_matrix = np.zeros((vocab_size, vocab_size), dtype=np.int32)
 
@@ -123,13 +124,13 @@ def create_co_matrix(corpus, vocab_size, window_size=1):
     return co_matrix
 
 
-def ppmi(C, verbose=False, eps = 1e-8):
-    '''PPMI(점별 상호정보량) 생성
+def ppmi(C, verbose=False, eps=1e-8):
+    """PPMI(점별 상호정보량) 생성
 
     :param C: 동시발생 행렬
     :param verbose: 진행 상황을 출력할지 여부
     :return:
-    '''
+    """
     M = np.zeros_like(C, dtype=np.float32)
     N = np.sum(C)
     S = np.sum(C, axis=0)
@@ -138,27 +139,27 @@ def ppmi(C, verbose=False, eps = 1e-8):
 
     for i in range(C.shape[0]):
         for j in range(C.shape[1]):
-            pmi = np.log2(C[i, j] * N / (S[j]*S[i]) + eps)
+            pmi = np.log2(C[i, j] * N / (S[j] * S[i]) + eps)
             M[i, j] = max(0, pmi)
 
             if verbose:
                 cnt += 1
-                if cnt % (total//100) == 0:
-                    print('%.1f%% 완료' % (100*cnt/total))
+                if cnt % (total // 100) == 0:
+                    print("%.1f%% 완료" % (100 * cnt / total))
     return M
 
 
 def create_contexts_target(corpus, window_size=1):
-    '''맥락과 타깃 생성
+    """맥락과 타깃 생성
 
     :param corpus: 말뭉치(단어 ID 목록)
     :param window_size: 윈도우 크기(윈도우 크기가 1이면 타깃 단어 좌우 한 단어씩이 맥락에 포함)
     :return:
-    '''
+    """
     target = corpus[window_size:-window_size]
     contexts = []
 
-    for idx in range(window_size, len(corpus)-window_size):
+    for idx in range(window_size, len(corpus) - window_size):
         cs = []
         for t in range(-window_size, window_size + 1):
             if t == 0:
@@ -171,6 +172,7 @@ def create_contexts_target(corpus, window_size=1):
 
 def to_cpu(x):
     import numpy
+
     if type(x) == numpy.ndarray:
         return x
     return np.asnumpy(x)
@@ -178,6 +180,7 @@ def to_cpu(x):
 
 def to_gpu(x):
     import cupy
+
     if type(x) == cupy.ndarray:
         return x
     return cupy.asarray(x)
@@ -186,7 +189,7 @@ def to_gpu(x):
 def clip_grads(grads, max_norm):
     total_norm = 0
     for grad in grads:
-        total_norm += np.sum(grad ** 2)
+        total_norm += np.sum(grad**2)
     total_norm = np.sqrt(total_norm)
 
     rate = max_norm / (total_norm + 1e-6)
@@ -196,7 +199,7 @@ def clip_grads(grads, max_norm):
 
 
 def eval_perplexity(model, corpus, batch_size=10, time_size=35):
-    print('퍼플렉서티 평가 중 ...')
+    print("퍼플렉서티 평가 중 ...")
     corpus_size = len(corpus)
     total_loss, loss_cnt = 0, 0
     max_iters = (corpus_size - 1) // (batch_size * time_size)
@@ -218,16 +221,15 @@ def eval_perplexity(model, corpus, batch_size=10, time_size=35):
             loss = model.forward(xs, ts)
         total_loss += loss
 
-        sys.stdout.write('\r%d / %d' % (iters, max_iters))
+        sys.stdout.write("\r%d / %d" % (iters, max_iters))
         sys.stdout.flush()
 
-    print('')
+    print("")
     ppl = np.exp(total_loss / max_iters)
     return ppl
 
 
-def eval_seq2seq(model, question, correct, id_to_char,
-                 verbos=False, is_reverse=False):
+def eval_seq2seq(model, question, correct, id_to_char, verbos=False, is_reverse=False):
     correct = correct.flatten()
     # 머릿글자
     start_id = correct[0]
@@ -235,31 +237,31 @@ def eval_seq2seq(model, question, correct, id_to_char,
     guess = model.generate(question, start_id, len(correct))
 
     # 문자열로 변환
-    question = ''.join([id_to_char[int(c)] for c in question.flatten()])
-    correct = ''.join([id_to_char[int(c)] for c in correct])
-    guess = ''.join([id_to_char[int(c)] for c in guess])
+    question = "".join([id_to_char[int(c)] for c in question.flatten()])
+    correct = "".join([id_to_char[int(c)] for c in correct])
+    guess = "".join([id_to_char[int(c)] for c in guess])
 
     if verbos:
         if is_reverse:
             question = question[::-1]
 
-        colors = {'ok': '\033[92m', 'fail': '\033[91m', 'close': '\033[0m'}
-        print('Q', question)
-        print('T', correct)
+        colors = {"ok": "\033[92m", "fail": "\033[91m", "close": "\033[0m"}
+        print("Q", question)
+        print("T", correct)
 
-        is_windows = os.name == 'nt'
+        is_windows = os.name == "nt"
 
         if correct == guess:
-            mark = colors['ok'] + '☑' + colors['close']
+            mark = colors["ok"] + "☑" + colors["close"]
             if is_windows:
-                mark = 'O'
-            print(mark + ' ' + guess)
+                mark = "O"
+            print(mark + " " + guess)
         else:
-            mark = colors['fail'] + '☒' + colors['close']
+            mark = colors["fail"] + "☒" + colors["close"]
             if is_windows:
-                mark = 'X'
-            print(mark + ' ' + guess)
-        print('---')
+                mark = "X"
+            print(mark + " " + guess)
+        print("---")
 
     return 1 if guess == correct else 0
 
@@ -267,18 +269,27 @@ def eval_seq2seq(model, question, correct, id_to_char,
 def analogy(a, b, c, word_to_id, id_to_word, word_matrix, top=5, answer=None):
     for word in (a, b, c):
         if word not in word_to_id:
-            print('%s(을)를 찾을 수 없습니다.' % word)
+            print("%s(을)를 찾을 수 없습니다." % word)
             return
 
-    print('\n[analogy] ' + a + ':' + b + ' = ' + c + ':?')
-    a_vec, b_vec, c_vec = word_matrix[word_to_id[a]], word_matrix[word_to_id[b]], word_matrix[word_to_id[c]]
+    print("\n[analogy] " + a + ":" + b + " = " + c + ":?")
+    a_vec, b_vec, c_vec = (
+        word_matrix[word_to_id[a]],
+        word_matrix[word_to_id[b]],
+        word_matrix[word_to_id[c]],
+    )
     query_vec = b_vec - a_vec + c_vec
     query_vec = normalize(query_vec)
 
     similarity = np.dot(word_matrix, query_vec)
 
     if answer is not None:
-        print("==>" + answer + ":" + str(np.dot(word_matrix[word_to_id[answer]], query_vec)))
+        print(
+            "==>"
+            + answer
+            + ":"
+            + str(np.dot(word_matrix[word_to_id[answer]], query_vec))
+        )
 
     count = 0
     for i in (-1 * similarity).argsort():
@@ -286,7 +297,7 @@ def analogy(a, b, c, word_to_id, id_to_word, word_matrix, top=5, answer=None):
             continue
         if id_to_word[i] in (a, b, c):
             continue
-        print(' {0}: {1}'.format(id_to_word[i], similarity[i]))
+        print(" {0}: {1}".format(id_to_word[i], similarity[i]))
 
         count += 1
         if count >= top:

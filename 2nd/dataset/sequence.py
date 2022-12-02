@@ -1,6 +1,7 @@
 # coding: utf-8
 import sys
-sys.path.append('..')
+
+sys.path.append("..")
 import os
 import numpy
 
@@ -19,17 +20,17 @@ def _update_vocab(txt):
             id_to_char[tmp_id] = char
 
 
-def load_data(file_name='addition.txt', seed=1984):
-    file_path = os.path.dirname(os.path.abspath(__file__)) + '/' + file_name
+def load_data(file_name="addition.txt", seed=1984):
+    file_path = os.path.dirname(os.path.abspath(__file__)) + "/" + file_name
 
     if not os.path.exists(file_path):
-        print('No file: %s' % file_name)
+        print("No file: %s" % file_name)
         return None
 
     questions, answers = [], []
 
-    for line in open(file_path, 'r'):
-        idx = line.find('_')
+    for line in open(file_path, "r"):
+        idx = line.find("_")
         questions.append(line[:idx])
         answers.append(line[idx:-1])
 
